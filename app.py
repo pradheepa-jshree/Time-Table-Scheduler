@@ -1,7 +1,10 @@
 # app.py
 import streamlit as st
-from ui.components import inject_global_styles, render_status_bar
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from ui.components import inject_global_styles, render_status_bar
 st.set_page_config(
     page_title='AI Timetable Scheduler',
     page_icon='🗓️',
