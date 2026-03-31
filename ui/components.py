@@ -151,6 +151,20 @@ div[data-testid="metric-container"] {
     background: rgba(22, 27, 34, 0.9) !important;
     font-weight: 700 !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* CHECKBOX: Prevent label wrapping for working days */
+/* ─────────────────────────────────────────────────────────────────────────── */
+[data-testid="stCheckbox"] label p {
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+[data-testid="stCheckbox"] {
+    display: flex !important;
+    align-items: center !important;
+}
 </style>
 """
 

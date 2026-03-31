@@ -41,10 +41,47 @@ def render():
         start_time    = st.text_input('Start Time', value='09:00')
 
         st.markdown('<p style="color:#8b949e;font-size:13px;margin-top:8px;">Working Days</p>', unsafe_allow_html=True)
-        day_cols = st.columns(6)
+        
+        # ── Checkbox styling for working days ──────────────────────────────
+        st.markdown("""
+        <style>
+        [data-testid="stCheckbox"] {
+            padding: 8px 4px !important;
+            min-width: 90px !important;
+        }
+        [data-testid="stCheckbox"] label {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 4px !important;
+        }
+        [data-testid="stCheckbox"] label p {
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            white-space: nowrap !important;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.9) !important;
+            margin: 0 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # ── Working days selector (7 columns - one per day) ─────────────────
+        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        cols = st.columns(7)
         days_selected = {}
-        for i, d in enumerate(['Mon','Tue','Wed','Thu','Fri','Sat']):
-            days_selected[d] = day_cols[i].checkbox(d, value=(d != 'Sat'), key=f'day_{d}', label_visibility='visible')
+        selected_days = []
+        
+        for i, day in enumerate(days):
+            with cols[i]:
+                checked = st.checkbox(
+                    day,
+                    value=(day not in ["Saturday", "Sunday"]),
+                    key=f"day_{day}"
+                )
+                days_selected[day[:3]] = checked  # Store as Mon, Tue, etc. for compatibility
+                if checked:
+                    selected_days.append(day)
 
         st.markdown('<br>', unsafe_allow_html=True)
         use_mrv = st.toggle('🎯 MRV Heuristic', value=True)
