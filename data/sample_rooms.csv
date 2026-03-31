@@ -1,0 +1,4 @@
+id,name,capacity,type
+R01,Lab-101,30,lab
+R02,Hall-A,60,lecture
+R03,Hall-B,80,lecture
