@@ -49,7 +49,7 @@ def render():
         if not st.session_state.get('data_loaded'):
             st.warning('⚠️ No data loaded yet. Go to 📥 Input Data first.')
         else:
-            if st.button('🚀 Run AI Solver', type='primary', use_container_width=True):
+            if st.button('🚀 Run AI Solver', type='primary', width='stretch'):
                 with st.spinner('Running CSP backtracking...'):
                     try:
                         # ── Integration Point (Day 8) ──────────────────────

@@ -4,6 +4,18 @@
 
 import streamlit as st
 import streamlit.components.v1 as components
+import base64
+from pathlib import Path
+
+
+# ── Background image loader ───────────────────────────────────────────────────
+def get_bg_base64():
+    """Load background image as base64 string."""
+    try:
+        with open("assets/bg.png", "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
+        return None
 
 
 # ── Global dark theme injected once in app.py ─────────────────────────────────
@@ -46,6 +58,99 @@ div[data-testid="metric-container"] {
     padding: 16px !important;
 }
 .stDataFrame { background: #161b22 !important; }
+
+/* Hide Streamlit default toolbar and header */
+#MainMenu {visibility: hidden !important;}
+header[data-testid="stHeader"] {display: none !important;}
+.stDeployButton {display: none !important;}
+[data-testid="stToolbar"] {display: none !important;}
+
+/* Hide Gemini/Streamlit badge at the bottom */
+.viewerBadge_container__1QSob {display: none !important;}
+.viewerBadge_link__qRIco {display: none !important;}
+#stDecoration {display: none !important;}
+[data-testid="stDecoration"] {display: none !important;}
+footer {display: none !important;}
+footer:after {display: none !important;}
+
+/* Improve font clarity */
+/* Main page heading */
+h1 {
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    text-shadow: 0 0 20px rgba(0,0,0,1), 
+                 2px 2px 8px rgba(0,0,0,1) !important;
+    letter-spacing: 0.02em !important;
+}
+
+/* Subtext and labels */
+p, label, span, .stMarkdown p {
+    color: #e6edf3 !important;
+    font-weight: 500 !important;
+    text-shadow: 1px 1px 6px rgba(0,0,0,1) !important;
+    font-size: 0.95rem !important;
+}
+
+/* Tab labels */
+.stTabs [data-baseweb="tab"] p {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    text-shadow: 1px 1px 6px rgba(0,0,0,1) !important;
+}
+
+/* CSV labels above uploaders */
+.stMarkdown h3, .stMarkdown strong {
+    color: #ffffff !important;
+    text-shadow: 0 0 10px rgba(0,0,0,1) !important;
+    font-weight: 700 !important;
+}
+
+/* Keep file uploader box text dark */
+[data-testid="stFileUploader"] p,
+[data-testid="stFileUploader"] span {
+    color: #333333 !important;
+    text-shadow: none !important;
+    font-weight: 400 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* ENHANCED: Sidebar semi-transparency, bold fonts, and background overlay */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Sidebar: 80% opacity with backdrop blur */
+[data-testid="stSidebar"] {
+    background: rgba(16, 24, 31, 0.8) !important;
+    backdrop-filter: blur(2px) !important;
+}
+
+/* Main content area: Dark overlay for readability */
+[data-testid="stAppViewContainer"] {
+    background: rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-testid="stAppViewContainer"] > .main {
+    background: rgba(13, 17, 23, 0.7) !important;
+    backdrop-filter: blur(1px) !important;
+}
+
+/* Global bold fonts: font-weight 700 */
+h2, h3, h4, h5, h6 {
+    font-weight: 700 !important;
+}
+
+input, select, textarea {
+    font-weight: 700 !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-weight: 700 !important;
+}
+
+div[data-testid="metric-container"] {
+    background: rgba(22, 27, 34, 0.9) !important;
+    font-weight: 700 !important;
+}
 </style>
 """
 
@@ -53,6 +158,38 @@ div[data-testid="metric-container"] {
 def inject_global_styles():
     """Call once in app.py — injects dark theme overrides."""
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+
+
+def render_background():
+    """Inject background image CSS with dark overlay."""
+    bg_b64 = get_bg_base64()
+    if not bg_b64:
+        return
+    
+    bg_css = f"""
+<style>
+[data-testid="stAppViewContainer"] {{
+    background-image: url("data:image/png;base64,{bg_b64}") !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+}}
+
+[data-testid="stAppViewContainer"] > .main {{
+    background: rgba(13, 17, 23, 0.88) !important;
+}}
+
+[data-testid="stSidebar"] {{
+    background: rgba(13, 17, 23, 1.0) !important;
+}}
+
+section[data-testid="stAppViewContainer"] > div:first-child {{
+    background: transparent !important;
+}}
+</style>
+"""
+    st.markdown(bg_css, unsafe_allow_html=True)
 
 
 # ── Top status bar ────────────────────────────────────────────────────────────
@@ -64,17 +201,21 @@ def render_status_bar(title: str = "AI-Powered College Timetable Scheduler",
     <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Syne:wght@800&display=swap');
     .status-bar {{
-        display: flex; align-items: center; justify-content: space-between;
+        display: flex; align-items: flex-start; justify-content: space-between;
         padding: 12px 20px;
         background: #0d1117;
         border-bottom: 1px solid #1e2d3d;
         margin-bottom: 4px;
+        gap: 16px;
     }}
     .status-bar h1 {{
         font-family: 'Syne', sans-serif;
-        font-size: 20px; font-weight: 800;
-        color: #e6edf3; margin: 0;
+        font-size: 14px; font-weight: 800;
+        color: #e6edf3; margin: 0; padding: 0;
         letter-spacing: -0.02em;
+        flex: 1; min-width: 0;
+        word-wrap: break-word; white-space: normal;
+        line-height: 1.3;
     }}
     .status-pill {{
         font-family: 'JetBrains Mono', monospace;

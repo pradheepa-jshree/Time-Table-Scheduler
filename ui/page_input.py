@@ -18,33 +18,33 @@ def render():
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown('<p style="color:#8b949e;font-size:13px;">👨‍🏫 Teachers CSV</p>', unsafe_allow_html=True)
-            teachers_file = st.file_uploader('', type='csv', key='t_csv', label_visibility='collapsed')
+            teachers_file = st.file_uploader('Upload Teachers CSV', type='csv', key='t_csv', label_visibility='collapsed')
             if teachers_file:
                 df = pd.read_csv(teachers_file)
-                st.dataframe(df, use_container_width=True, height=150)
+                st.dataframe(df, width='stretch', height=150)
                 st.session_state['teachers_csv'] = teachers_file
                 render_badge(f"{len(df)} teachers loaded", "#3fb950")
 
         with col2:
             st.markdown('<p style="color:#8b949e;font-size:13px;">🏫 Rooms CSV</p>', unsafe_allow_html=True)
-            rooms_file = st.file_uploader('', type='csv', key='r_csv', label_visibility='collapsed')
+            rooms_file = st.file_uploader('Upload Rooms CSV', type='csv', key='r_csv', label_visibility='collapsed')
             if rooms_file:
                 df = pd.read_csv(rooms_file)
-                st.dataframe(df, use_container_width=True, height=150)
+                st.dataframe(df, width='stretch', height=150)
                 st.session_state['rooms_csv'] = rooms_file
                 render_badge(f"{len(df)} rooms loaded", "#58a6ff")
 
         with col3:
             st.markdown('<p style="color:#8b949e;font-size:13px;">📚 Sessions CSV</p>', unsafe_allow_html=True)
-            sessions_file = st.file_uploader('', type='csv', key='s_csv', label_visibility='collapsed')
+            sessions_file = st.file_uploader('Upload Sessions CSV', type='csv', key='s_csv', label_visibility='collapsed')
             if sessions_file:
                 df = pd.read_csv(sessions_file)
-                st.dataframe(df, use_container_width=True, height=150)
+                st.dataframe(df, width='stretch', height=150)
                 st.session_state['sessions_csv'] = sessions_file
                 render_badge(f"{len(df)} sessions loaded", "#bc8cff")
 
         st.divider()
-        if st.button('✅ Load Data from CSVs', type='primary', use_container_width=True):
+        if st.button('✅ Load Data from CSVs', type='primary', width='stretch'):
             if all(k in st.session_state for k in ['teachers_csv','rooms_csv','sessions_csv']):
                 try:
                     # ── Integration Point (Day 8) ──────────────────────────────
@@ -75,7 +75,7 @@ def render():
             'session_type':  ['lecture','lecture','lab'],
             'duration':      [1,1,1],
         })
-        edited = st.data_editor(default_sessions, num_rows='dynamic', use_container_width=True)
+        edited = st.data_editor(default_sessions, num_rows='dynamic', width='stretch')
         if st.button('💾 Save Manual Data', type='primary'):
             st.session_state['manual_sessions'] = edited
             st.session_state['data_loaded'] = True
