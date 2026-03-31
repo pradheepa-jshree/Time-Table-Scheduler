@@ -1,7 +1,17 @@
 # ui/page_input.py
 import streamlit as st
 import pandas as pd
+import tempfile
+import os
 from ui.components import card_start, card_end, render_badge
+
+# ── Backend imports (with fallback for ui branch) ─────────────────────────────
+try:
+    from data.db import load_data
+    from utils.csv_parser import load_from_csv
+    BACKEND_AVAILABLE = True
+except ImportError:
+    BACKEND_AVAILABLE = False
 
 def render():
     st.markdown(
@@ -46,22 +56,37 @@ def render():
         st.divider()
         if st.button('✅ Load Data from CSVs', type='primary', width='stretch'):
             if all(k in st.session_state for k in ['teachers_csv','rooms_csv','sessions_csv']):
-                try:
-                    # ── Integration Point (Day 8) ──────────────────────────────
-                    # from utils.csv_parser import load_from_csv
-                    # from data.db import load_data
-                    # load_from_csv(st.session_state['teachers_csv'],
-                    #               st.session_state['rooms_csv'],
-                    #               st.session_state['sessions_csv'])
-                    # sessions, rooms, slots = load_data()
-                    # st.session_state['sessions'] = sessions
-                    # st.session_state['rooms']    = rooms
-                    # st.session_state['slots']    = slots
-                    # ──────────────────────────────────────────────────────────
+                if not BACKEND_AVAILABLE:
                     st.session_state['data_loaded'] = True
-                    st.success('✅ Data loaded — go to ⚙️ Run Solver')
-                except ValueError as e:
-                    st.error(f'❌ CSV Error: {e}')
+                    st.success('✅ Data loaded (mock) — go to ⚙️ Run Solver')
+                else:
+                    try:
+                        # Save uploaded files to temp paths
+                        with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as t_file:
+                            t_file.write(st.session_state['teachers_csv'].getvalue())
+                            teachers_path = t_file.name
+                        with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as r_file:
+                            r_file.write(st.session_state['rooms_csv'].getvalue())
+                            rooms_path = r_file.name
+                        with tempfile.NamedTemporaryFile(mode='wb', suffix='.csv', delete=False) as s_file:
+                            s_file.write(st.session_state['sessions_csv'].getvalue())
+                            sessions_path = s_file.name
+                        
+                        # Call backend CSV loader
+                        db_path = st.session_state['db_path']
+                        load_from_csv(teachers_path, rooms_path, sessions_path, db_path)
+                        
+                        # Clean up temp files
+                        os.unlink(teachers_path)
+                        os.unlink(rooms_path)
+                        os.unlink(sessions_path)
+                        
+                        st.session_state['data_loaded'] = True
+                        st.success('✅ Data loaded — go to ⚙️ Run Solver')
+                    except ValueError as e:
+                        st.error(f'❌ CSV Error: {e}')
+                    except Exception as e:
+                        st.error(f'❌ Error loading data: {e}')
             else:
                 st.warning('⚠️ Upload all 3 CSV files first.')
 

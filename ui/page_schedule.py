@@ -41,18 +41,43 @@ def render():
         unsafe_allow_html=True
     )
 
-    result = st.session_state.get('result', MOCK_RESULT)
+    result = st.session_state.get('result', None)
+    
+    # If no result, use mock data as fallback
+    if result is None:
+        result = MOCK_RESULT
+    
+    sessions = st.session_state.get('sessions', [])
 
     if not result.assignments:
         st.info('No schedule yet — go to ⚙️ Run Solver.')
         return
 
-    # ── Session info: use real data on Day 8 ─────────────────────────────────
-    # Day 8 replace MOCK_SESSION_INFO with:
-    # from data.db import get_session_info
-    # session_info = {a.session_id: get_session_info(a.session_id)
-    #                 for a in result.assignments}
-    session_info = MOCK_SESSION_INFO
+    # ── Build session info from real data if available ───────────────────────
+    if sessions:
+        # Use real session data
+        sessions_map = {s.id: s for s in sessions}
+        session_info = {}
+        for a in result.assignments:
+            s = sessions_map.get(a.session_id)
+            if s:
+                session_info[a.session_id] = {
+                    'subject': s.subject,
+                    'teacher': s.teacher_id,
+                    'room':    a.room_id,
+                    'group':   s.student_group,
+                }
+            else:
+                # Fallback if session not found
+                session_info[a.session_id] = {
+                    'subject': a.session_id,
+                    'teacher': 'Unknown',
+                    'room':    a.room_id,
+                    'group':   'Unknown',
+                }
+    else:
+        # Use mock data if no real sessions available
+        session_info = MOCK_SESSION_INFO
 
     # ── Timetable grid ────────────────────────────────────────────────────────
     render_timetable_grid(result.assignments, session_info)
