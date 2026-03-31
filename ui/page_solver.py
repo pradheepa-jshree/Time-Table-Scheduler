@@ -2,6 +2,15 @@
 import streamlit as st
 from ui.components import render_constraint_checklist, render_agent_console
 
+# ── Backend imports (with fallback for ui branch) ─────────────────────────────
+try:
+    from data.db import load_data
+    from engine.solver import solve
+    from agent.monitor import ScheduleMonitor
+    BACKEND_AVAILABLE = True
+except ImportError:
+    BACKEND_AVAILABLE = False
+
 # Default boot logs shown before solver runs
 BOOT_LOGS = [
     "[BOOT] TimetableAgent v2.1 initialized...",
@@ -51,16 +60,8 @@ def render():
         else:
             if st.button('🚀 Run AI Solver', type='primary', use_container_width=True):
                 with st.spinner('Running CSP backtracking...'):
-                    try:
-                        # ── Integration Point (Day 8) ──────────────────────
-                        # from engine.solver import solve
-                        # result = solve(
-                        #     st.session_state['sessions'],
-                        #     st.session_state['rooms'],
-                        #     st.session_state['slots'],
-                        #     use_mrv=use_mrv, use_fc=use_fc
-                        # )
-                        # ── Mock until Day 8 ───────────────────────────────
+                    if not BACKEND_AVAILABLE:
+                        # ── Mock fallback until backend is merged ─────────
                         from utils.models import Assignment, ScheduleResult
                         result = ScheduleResult(
                             assignments=[
@@ -81,8 +82,9 @@ def render():
                             },
                             is_complete=True
                         )
-                        # ──────────────────────────────────────────────────
                         st.session_state['result']  = result
+                        st.session_state['sessions'] = []
+                        st.session_state['rooms']    = []
                         st.session_state['use_mrv'] = use_mrv
                         st.session_state['use_fc']  = use_fc
 
@@ -102,9 +104,55 @@ def render():
                         else:
                             logs.append("[ERR] No valid schedule found — check constraints")
                         st.session_state['agent_logs'] = logs
-
-                    except Exception as e:
-                        st.error(f'❌ Solver error: {e}')
+                        
+                    else:
+                        # ── Real backend integration ──────────────────────
+                        try:
+                            # Load data from database
+                            db_path = st.session_state['db_path']
+                            sessions, rooms, slots = load_data(db_path)
+                            
+                            # Run the solver
+                            result = solve(sessions, rooms, slots, use_mrv=use_mrv, use_fc=use_fc)
+                            
+                            # Store result and data in session state
+                            st.session_state['result']  = result
+                            st.session_state['sessions'] = sessions
+                            st.session_state['rooms']    = rooms
+                            st.session_state['use_mrv'] = use_mrv
+                            st.session_state['use_fc']  = use_fc
+                            
+                            # Run monitor to check violations
+                            monitor = ScheduleMonitor(db_path)
+                            violations = monitor.check(result.assignments)
+                            
+                            # Build agent logs
+                            logs = [
+                                "[BOOT] TimetableAgent v2.1 initialized...",
+                                f"[INFO] Loading variables: {len(result.assignments)} class sessions",
+                                f"[INFO] Building domains: {len(slots)} time slots × {len(rooms)} rooms",
+                                f"[OK]  MRV heuristic {'active — most constrained first' if use_mrv else 'disabled'}",
+                                f"[OK]  Forward Checking {'enabled' if use_fc else 'disabled'}",
+                                "[INFO] Backtracking search started (DFS)...",
+                            ]
+                            for i, a in enumerate(result.assignments, 1):
+                                logs.append(f"[OK]  Depth {i} — {a.session_id} assigned to {a.time_slot}, {a.room_id}")
+                            
+                            if result.is_complete:
+                                logs.append(f"[OK]  Schedule complete in {result.stats.get('time_ms', 0)} ms ✓")
+                            else:
+                                logs.append("[ERR] No valid schedule found — check constraints")
+                            
+                            # Add violations to logs
+                            for v in violations:
+                                logs.append(f"[ERR] {v}")
+                            
+                            st.session_state['agent_logs'] = logs
+                            
+                        except Exception as e:
+                            st.error(f'❌ Solver error: {e}')
+                            import traceback
+                            st.error(traceback.format_exc())
 
         # ── Console always visible ────────────────────────────────────────
         logs = st.session_state.get('agent_logs', BOOT_LOGS)

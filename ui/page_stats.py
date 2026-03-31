@@ -30,7 +30,12 @@ def render():
         unsafe_allow_html=True
     )
 
-    result = st.session_state.get('result', MOCK_RESULT)
+    result = st.session_state.get('result', None)
+    
+    # Use mock data as fallback if no real result
+    if result is None:
+        result = MOCK_RESULT
+    
     stats  = result.stats
 
     # ── Metric cards ──────────────────────────────────────────────────────────

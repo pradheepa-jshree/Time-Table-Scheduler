@@ -5,12 +5,28 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from ui.components import inject_global_styles, render_status_bar
+
+# ── Backend imports (with fallback for ui branch) ─────────────────────────────
+try:
+    from data.db import load_data, init_db
+    from engine.solver import solve
+    from agent.monitor import ScheduleMonitor
+    from utils.csv_parser import load_from_csv
+    BACKEND_AVAILABLE = True
+except ImportError:
+    BACKEND_AVAILABLE = False
 st.set_page_config(
     page_title='AI Timetable Scheduler',
     page_icon='🗓️',
     layout='wide',
     initial_sidebar_state='expanded'
 )
+
+# ── Initialize backend (on first run) ─────────────────────────────────────────
+if 'db_path' not in st.session_state:
+    st.session_state['db_path'] = 'timetable.db'
+    if BACKEND_AVAILABLE:
+        init_db(st.session_state['db_path'])
 
 # ── Inject dark theme globally ─────────────────────────────────────────────
 inject_global_styles()
@@ -37,6 +53,11 @@ page = st.sidebar.radio('', [
 ], label_visibility='collapsed')
 
 st.sidebar.divider()
+
+# ── Backend availability warning ──────────────────────────────────────────────
+if not BACKEND_AVAILABLE:
+    st.sidebar.warning('⚠️ Backend not connected — showing mock data')
+
 st.sidebar.markdown(
     '<p style="font-family:\'JetBrains Mono\',monospace;font-size:10px;'
     'color:#484f58;">CSP · MRV · Forward Checking</p>',
