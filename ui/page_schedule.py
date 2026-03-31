@@ -1,78 +1,92 @@
-# ui/page_schedule.py
 import streamlit as st
+import pandas as pd
 from utils.models import Assignment, ScheduleResult
-from ui.components import render_timetable_grid, render_violation_log
 
-# ── Mock session info (replace on Day 8 with DB lookup) ──────────────────────
-MOCK_SESSION_INFO = {
-    'S01': {'subject': 'Math',      'teacher': 'Dr. Smith',  'room': 'Rm 101', 'group': 'CS-A'},
-    'S02': {'subject': 'Physics',   'teacher': 'Prof. Jones','room': 'Lab A',  'group': 'CS-B'},
-    'S03': {'subject': 'CS 101',    'teacher': 'Dr. Alice',  'room': 'Lab B',  'group': 'EC-A'},
-    'S04': {'subject': 'Chemistry', 'teacher': 'Mr. Kumar',  'room': 'Rm 102', 'group': 'CS-A'},
-    'S05': {'subject': 'Biology',   'teacher': 'Ms. Patel',  'room': 'Lab A',  'group': 'CS-B'},
-}
-
+# Mock data ONLY used if solver has never been run
 MOCK_RESULT = ScheduleResult(
     assignments=[
-        Assignment('S01','R02','MON-09:00'),
-        Assignment('S02','R03','MON-10:00'),
-        Assignment('S03','R01','MON-11:00'),
-        Assignment('S04','R02','TUE-09:00'),
-        Assignment('S05','R03','TUE-10:00'),
-        Assignment('S01','R01','WED-09:00'),
-        Assignment('S03','R02','WED-10:00'),
-        Assignment('S02','R03','WED-11:00'),
-        Assignment('S04','R01','THU-09:00'),
-        Assignment('S05','R02','THU-10:00'),
-        Assignment('S01','R03','FRI-09:00'),
-        Assignment('S02','R01','FRI-11:00'),
+        Assignment('S01', 'R02', 'MON-09:00'),
+        Assignment('S02', 'R03', 'MON-10:00'),
+        Assignment('S03', 'R01', 'TUE-09:00'),
     ],
-    stats={'nodes_explored':42,'backtracks':3,'time_ms':18.4,'pruning_per_step':[5,3,1]},
-    is_complete=True
+    stats={'nodes_explored': 0, 'backtracks': 0,
+           'time_ms': 0, 'pruning_per_step': [0]},
+    is_complete=False
 )
 
+GROUP_COLORS = {
+    'CS-A': '#4CAF50',
+    'CS-B': '#2196F3',
+    'EC-A': '#FF9800',
+    'ME-A': '#9C27B0',
+}
 
 def render():
-    st.markdown(
-        '<h2 style="font-family:\'Syne\',sans-serif;font-weight:800;'
-        'color:#e6edf3;margin-bottom:4px;">📅 Generated Timetable</h2>'
-        '<p style="color:#484f58;font-size:13px;margin-bottom:20px;">'
-        'Color-coded by teacher. Each block shows subject, teacher, and room.</p>',
-        unsafe_allow_html=True
-    )
+    st.title('📅 View Schedule')
 
-    result = st.session_state.get('result', MOCK_RESULT)
+    result = st.session_state.get('result', None)
 
-    if not result.assignments:
-        st.info('No schedule yet — go to ⚙️ Run Solver.')
+    if result is None:
+        st.warning('⚠ No schedule generated yet. Go to Run Solver first.')
         return
 
-    # ── Session info: use real data on Day 8 ─────────────────────────────────
-    # Day 8 replace MOCK_SESSION_INFO with:
-    # from data.db import get_session_info
-    # session_info = {a.session_id: get_session_info(a.session_id)
-    #                 for a in result.assignments}
-    session_info = MOCK_SESSION_INFO
+    if not result.is_complete:
+        st.error('❌ Last solver run did not find a complete schedule.')
+        return
 
-    # ── Timetable grid ────────────────────────────────────────────────────────
-    render_timetable_grid(result.assignments, session_info)
+    st.success(f'✅ Showing {len(result.assignments)} scheduled sessions.')
 
-    st.divider()
+    # Build display dataframe
+    sessions_map = {}
+    session_list = st.session_state.get('sessions', [])
+    for s in session_list:
+        sessions_map[s.id] = s
 
-    # ── Violations ────────────────────────────────────────────────────────────
-    st.markdown(
-        '<p style="font-family:\'Syne\',sans-serif;font-weight:700;'
-        'font-size:14px;color:#8b949e;margin-bottom:8px;">CONSTRAINT VIOLATIONS</p>',
-        unsafe_allow_html=True
-    )
+    rows = []
+    for a in result.assignments:
+        s = sessions_map.get(a.session_id)
+        label = f"{s.subject}\n{s.student_group}" if s else a.session_id
+        rows.append({
+            'time_slot': a.time_slot,
+            'room_id': a.room_id,
+            'session_label': label,
+            'student_group': s.student_group if s else '',
+        })
+
+    if not rows:
+        st.info('No assignments to display.')
+        return
+
+    df = pd.DataFrame(rows)
+
+    # Pivot: rows = time_slot, columns = room
+    df_pivot = df.pivot_table(
+        index='time_slot',
+        columns='room_id',
+        values='session_label',
+        aggfunc='first'
+    ).fillna('')
+
+    # Sort time slots properly
+    df_pivot = df_pivot.sort_index()
+
+    # Color by student group
+    group_map = df.set_index('time_slot').get('student_group', {})
+
+    def color_cell(val):
+        for group, color in GROUP_COLORS.items():
+            if group in str(val):
+                return f'background-color: {color}; color: white'
+        return 'background-color: #2a2a2a; color: #888'
+
+    styled = df_pivot.style.applymap(color_cell)
+    st.dataframe(styled, use_container_width=True)
+
+    # Agent violations
     violations = st.session_state.get('agent_logs', [])
-    violations_only = [v for v in violations if '[ERR]' in v or 'clash' in v.lower()]
-    render_violation_log(violations_only)
-
-    # ── Download ──────────────────────────────────────────────────────────────
-    import pandas as pd
-    rows = [{'session': a.session_id, 'room': a.room_id, 'slot': a.time_slot}
-            for a in result.assignments]
-    csv = pd.DataFrame(rows).to_csv(index=False)
-    st.download_button('⬇️ Download Schedule CSV', data=csv,
-                       file_name='timetable.csv', mime='text/csv')
+    st.subheader('🤖 Agent Monitor Log')
+    if not violations:
+        st.success('✅ No conflicts detected.')
+    else:
+        for v in violations:
+            st.warning(v)

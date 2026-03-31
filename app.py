@@ -1,52 +1,32 @@
-# app.py
 import streamlit as st
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from data.db import init_db
 
-from ui.components import inject_global_styles, render_status_bar
 st.set_page_config(
     page_title='AI Timetable Scheduler',
-    page_icon='🗓️',
-    layout='wide',
-    initial_sidebar_state='expanded'
+    page_icon='🗓',
+    layout='wide'
 )
 
-# ── Inject dark theme globally ─────────────────────────────────────────────
-inject_global_styles()
+# Always init DB on startup
+init_db()
 
-# ── Status bar at top ──────────────────────────────────────────────────────
-conflicts = len(st.session_state.get('agent_logs', []))
-render_status_bar(
-    title="AI-Powered College Timetable Scheduler",
-    conflicts=conflicts
-)
-
-# ── Sidebar navigation ─────────────────────────────────────────────────────
-st.sidebar.markdown(
-    '<p style="font-family:\'Syne\',sans-serif;font-size:11px;'
-    'color:#484f58;letter-spacing:0.1em;margin-bottom:4px;">SRM UNIVERSITY · KTR</p>',
-    unsafe_allow_html=True
-)
-
-page = st.sidebar.radio('', [
+# Sidebar navigation
+st.sidebar.title("SRM UNIVERSITY · KTR")
+page = st.sidebar.radio('Navigate', [
     '📥 Input Data',
-    '⚙️ Run Solver',
+    '⚙ Run Solver', 
     '📅 View Schedule',
     '📊 Statistics',
-], label_visibility='collapsed')
+])
 
-st.sidebar.divider()
-st.sidebar.markdown(
-    '<p style="font-family:\'JetBrains Mono\',monospace;font-size:10px;'
-    'color:#484f58;">CSP · MRV · Forward Checking</p>',
-    unsafe_allow_html=True
-)
-
-# ── Route ──────────────────────────────────────────────────────────────────
-if   page == '📥 Input Data':   from ui import page_input    as p
-elif page == '⚙️ Run Solver':   from ui import page_solver   as p
-elif page == '📅 View Schedule': from ui import page_schedule as p
-else:                            from ui import page_stats    as p
+# Route to pages
+if page == '📥 Input Data':
+    from ui import page_input as p
+elif page == '⚙ Run Solver':
+    from ui import page_solver as p
+elif page == '📅 View Schedule':
+    from ui import page_schedule as p
+else:
+    from ui import page_stats as p
 
 p.render()
