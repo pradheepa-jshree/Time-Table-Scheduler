@@ -37,4 +37,3 @@ class ScheduleResult:
 class ScheduleInput:
     sessions: list[Session] = field(default_factory=list)
     rooms: list[Room] = field(default_factory=list)
-    
