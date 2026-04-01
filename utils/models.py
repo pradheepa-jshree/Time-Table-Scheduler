@@ -31,3 +31,10 @@ class ScheduleResult:
     assignments: list  # list[Assignment]
     stats: dict  # keys: nodes_explored, backtracks, time_ms, pruning_per_step
     is_complete: bool
+
+
+@dataclass
+class ScheduleInput:
+    sessions: list[Session] = field(default_factory=list)
+    rooms: list[Room] = field(default_factory=list)
+    
