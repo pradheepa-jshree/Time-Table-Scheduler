@@ -1,0 +1,11 @@
+id,teacher_id,student_group,subject,session_type
+S01,T01,CS-A,Data Structures,lecture
+S02,T02,CS-B,Networks,lecture
+S03,T01,CS-A,DS Lab,lab
+S04,T03,EC-A,Signals,lecture
+S05,T04,CS-B,OS,lecture
+S06,T05,CS-A,Maths,lecture
+S07,T02,EC-A,Networks Lab,lab
+S08,T03,CS-B,Digital Circuits,lecture
+S09,T04,CS-A,Algorithms,lecture
+S10,T05,EC-A,Embedded Systems,lecture
