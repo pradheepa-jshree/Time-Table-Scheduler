@@ -81,7 +81,7 @@ def render():
         session_info = MOCK_SESSION_INFO
 
     # ── Timetable grid ────────────────────────────────────────────────────────
-    render_timetable_grid(result.assignments, session_info)
+    render_timetable_grid(result.assignments, session_info, sessions=sessions)
 
     st.divider()
 

@@ -51,6 +51,12 @@ def load_from_csv(teachers_csv, rooms_csv, sessions_csv, db_path='timetable.db')
     conn = get_conn(db_path)
 
     try:
+        # Clear existing data before inserting new data
+        conn.execute('DELETE FROM schedule')
+        conn.execute('DELETE FROM sessions')
+        conn.execute('DELETE FROM rooms')
+        conn.execute('DELETE FROM teachers')
+        
         # Insert teachers
         for _, row in teachers_df.iterrows():
             teacher_dict = {

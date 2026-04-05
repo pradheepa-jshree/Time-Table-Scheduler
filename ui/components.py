@@ -109,9 +109,16 @@ p, label, span, .stMarkdown p {
 /* Keep file uploader box text dark */
 [data-testid="stFileUploader"] p,
 [data-testid="stFileUploader"] span {
-    color: #333333 !important;
+    color: ##ffffff !important;
     text-shadow: none !important;
     font-weight: 400 !important;
+
+}
+/* File uploader box background and border */
+[data-testid="stFileUploader"] {
+    background-color: rgba(37, 33, 100, 0.43)!important;
+    border: 2px dashed #4a9eff !important;
+    border-radius: 12px !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -269,17 +276,17 @@ def card_end():
 
 # ── Timetable calendar grid ───────────────────────────────────────────────────
 TEACHER_COLORS = {
-    "Dr. Smith":   {"bg": "#1a3a5c", "accent": "#58a6ff"},
-    "Prof. Jones": {"bg": "#2d1f4e", "accent": "#bc8cff"},
-    "Dr. Alice":   {"bg": "#4a1a2e", "accent": "#f778ba"},
-    "Mr. Kumar":   {"bg": "#3d2600", "accent": "#d29922"},
-    "Ms. Patel":   {"bg": "#0d3320", "accent": "#3fb950"},
+    'T01': '#1565C0',  # blue
+    'T02': '#E65100',  # orange
+    'T03': '#2E7D32',  # green
+    'T04': '#6A1B9A',  # purple
+    'T05': '#AD1457',  # pink
 }
-DEFAULT_COLOR = {"bg": "#1c2128", "accent": "#8b949e"}
+DEFAULT_COLOR = '#1c2128'
 
 
 def render_timetable_grid(assignments: list, session_info: dict,
-                           days=None, hours=None):
+                           days=None, hours=None, sessions=None):
     """
     assignments : list[Assignment]  — from ScheduleResult
     session_info: dict mapping session_id ->
@@ -305,14 +312,24 @@ def render_timetable_grid(assignments: list, session_info: dict,
                 "group":   info.get("group",    ""),
             }
 
-    # Build legend HTML
+    # Build legend HTML with unique teachers from session_info
     legend_items = ""
-    for teacher, colors in TEACHER_COLORS.items():
+    teacher_id_to_name = {}
+    
+    # Extract unique teacher_ids from session_info
+    for session_id, info in session_info.items():
+        teacher_id = info.get("teacher", "")
+        if teacher_id and teacher_id not in teacher_id_to_name:
+            teacher_id_to_name[teacher_id] = teacher_id
+    
+    # Generate legend items for each unique teacher
+    for teacher_id, display_name in sorted(teacher_id_to_name.items()):
+        color = TEACHER_COLORS.get(teacher_id, DEFAULT_COLOR)
         legend_items += f"""
         <span style="display:inline-flex;align-items:center;gap:6px;margin-right:18px;">
             <span style="width:12px;height:12px;border-radius:50%;
-                         background:{colors['accent']};"></span>
-            <span style="font-size:12px;color:#8b949e;">{teacher}</span>
+                         background:{color};"></span>
+            <span style="font-size:12px;color:#8b949e;">{display_name}</span>
         </span>"""
 
     # Build grid rows
@@ -345,23 +362,20 @@ def render_timetable_grid(assignments: list, session_info: dict,
         for day in days:
             entry = grid.get((day, hour))
             if entry:
-                colors = DEFAULT_COLOR
-                for t, c in TEACHER_COLORS.items():
-                    if t.lower() in entry["teacher"].lower():
-                        colors = c; break
+                teacher_id = entry["teacher"]
+                bg_color = TEACHER_COLORS.get(teacher_id, DEFAULT_COLOR)
                 cells += f"""
                 <td style="border:1px solid #1e2d3d;padding:5px;vertical-align:top;">
-                    <div style="background:{colors['bg']};
-                                border-left:3px solid {colors['accent']};
+                    <div style="background:{bg_color};
                                 border-radius:6px;padding:8px 10px;
                                 min-height:64px;">
                         <div style="font-family:'Syne',sans-serif;
                                     font-weight:700;font-size:13px;
-                                    color:{colors['accent']};margin-bottom:3px;">
+                                    color:#ffffff;margin-bottom:3px;">
                             {entry['subject']}
                         </div>
-                        <div style="font-size:11px;color:#8b949e;">{entry['teacher']}</div>
-                        <div style="font-size:10px;color:#484f58;margin-top:3px;">
+                        <div style="font-size:11px;color:#ffffff;">{teacher_id_to_name.get(teacher_id, teacher_id)}</div>
+                        <div style="font-size:10px;color:#ffffff;margin-top:3px;">
                             🏛 {entry['room']}
                         </div>
                     </div>
